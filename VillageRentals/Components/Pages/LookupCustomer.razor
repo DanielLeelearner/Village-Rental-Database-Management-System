@@ -1,0 +1,94 @@
+﻿@page "/lookupcustomer"
+@using System.Threading.Tasks
+
+<h2 class="welcome-message">Manage Customer</h2>
+
+<div style="position: relative;">
+    <input type="text" @bind="searchString" placeholder="Search" class="form-control" />
+    <button @onclick="FilterCustomer" class="btn btn-primary" style="position: absolute; right: 0px; top: 1%;">Search</button>
+</div>
+
+@if (!string.IsNullOrEmpty(searchString))
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>Last Name</th>
+                <th>First Name</th>
+                <th>Contact Phone</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in selectedCustomers)
+            {
+                <tr>
+                    <td>@customer[0]</td>
+                    <td>@customer[1]</td>
+                    <td>@customer[2]</td>
+                    <td>@customer[3]</td>
+                    <td>@customer[4]</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Customer ID</th>
+                <th>Last Name</th>
+                <th>First Name</th>
+                <th>Contact Phone</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in Customers)
+            {
+                <tr>
+                    <td>@customer[0]</td>
+                    <td>@customer[1]</td>
+                    <td>@customer[2]</td>
+                    <td>@customer[3]</td>
+                    <td>@customer[4]</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private DatabaseConnection db = new DatabaseConnection();
+    private List<List<string>> Customers = new List<List<string>>();
+    private List<List<string>> selectedCustomers = new List<List<string>>();
+    private string searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Customers = db.GetCustomerList();
+    }
+
+    private void FilterCustomer()
+    {
+        selectedCustomers.Clear();
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            foreach (var customer in Customers)
+            {
+                for (int i = 0; i < customer.Count; i++)
+                {
+                    if (customer[i].Contains(searchString))
+                    {
+                        selectedCustomers.Add(customer);
+                        break;
+                    }
+                }
+            }
+        }
+        StateHasChanged();
+    }
+}

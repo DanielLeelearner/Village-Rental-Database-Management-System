@@ -1,0 +1,96 @@
+﻿@page "/addcustomer"
+@using System.Threading.Tasks
+
+<h2 class="welcome-message">Add New Customer</h2>
+
+<div class="screen">
+    @if (showAlert)
+    {
+        <div class="alert @alertClass" role="alert">
+            @alertMessage
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="lastName">Last Name:</label>
+        <input id="lastName" class="form-control" @bind="lastName" />
+    </div>
+    <div class="form-group">
+        <label for="firstName">First Name:</label>
+        <input id="firstName" class="form-control" @bind="firstName" />
+    </div>
+    <div class="form-group">
+        <label for="contactPhone">Contact Phone:</label>
+        <input id="contactPhone" class="form-control" @bind="contactPhone" />
+    </div>
+    <div class="form-group">
+        <label for="email">Email:</label>
+        <input id="email" class="form-control" @bind="email" />
+    </div>
+
+    <button @onclick="AddNewCustomer" class="add-button">Add Customer</button>
+
+</div>
+
+
+@code {
+    private DatabaseConnection db = new DatabaseConnection();
+
+    private bool showAlert = false;
+    private string alertMessage = "";
+    private string alertClass = "";
+
+    private string lastName = "";
+    private string firstName = "";
+    private string contactPhone = "";
+    private string email = "";
+
+    private async Task AddNewCustomer()
+    {
+        if (string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(contactPhone) || string.IsNullOrWhiteSpace(email))
+        {
+            showAlert = true;
+            alertMessage = "Please fill in all fields.";
+            alertClass = "alert-danger";
+        }
+
+        if (!IsValidPhoneNumber(contactPhone))
+        {
+            showAlert = true;
+            alertMessage = "Please enter a valid contact number.";
+            alertClass = "alert-danger";
+        }
+        else
+        {
+            bool result = db.AddCustomer(lastName, firstName, contactPhone, email);
+            if (result)
+            {
+                showAlert = true;
+                alertMessage = "Customer added successfully!";
+                alertClass = "alert-success";
+                lastName = "";
+                firstName = "";
+                contactPhone = "";
+                email = "";
+            }
+            else
+            {
+                showAlert = true;
+                alertMessage = "Failed to add customer. Please try again.";
+                alertClass = "alert-danger";
+
+            }
+        }
+
+        StateHasChanged();
+    }
+   
+    private bool IsValidPhoneNumber(string contactPhone)
+    {
+        if (contactPhone.Length != 14) return false;
+
+        if (contactPhone[0] != '(' || contactPhone[4] != ')' || contactPhone[5] != ' ' || contactPhone[9] != '-') return false;
+
+        return true;
+    }
+}

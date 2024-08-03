@@ -1,0 +1,89 @@
+﻿@page "/addequipment"
+@using System.Threading.Tasks
+
+<h2 class="welcome-message">Add New Equipment</h2>
+
+<div class="screen">
+    @if (showAlert)
+    {
+        <div class="alert @alertClass" role="alert">
+            @alertMessage
+        </div>
+    }
+
+    <div class="form-group" style="display: flex; align-items: center;">
+        <label for="equipmentId" class="id-label">Equipment ID:</label>
+        <input id="equipmentId" class="form-control" style="margin-right: 20px;" @bind="equipmentId" />
+        <label for="categoryId" class="id-label">Category ID:</label>
+        <input id="categoryId" class="form-control" @bind="categoryId" />
+    </div>
+    <div class="form-group">
+        <label for="equipmentName">Equipment Name:</label>
+        <input id="equipmentName" class="form-control" @bind="equipmentName" />
+    </div>
+    <div class="form-group">
+        <label for="description">Description:</label>
+        <input id="description" class="form-control" @bind="description" />
+    </div>
+    <div class="form-group">
+        <label for="dailyRate">Daily Rate:</label>
+        <input id="dailyRate" class="form-control" @bind="dailyRate" />
+    </div>
+
+    <button @onclick="AddNewEquipment" class="add-button">Add Equipment</button>
+
+</div>
+
+@code {
+    private bool showAlert = false;
+    private string alertMessage = "";
+    private string alertClass = "";
+
+    private int equipmentId;
+    private int categoryId;
+    private string equipmentName = "";
+    private string description = "";
+    private float dailyRate;
+
+    private DatabaseConnection db = new DatabaseConnection();
+
+    private async Task AddNewEquipment()
+    {
+        if (equipmentId == 0 || !CheckValidCategoryId(categoryId) || string.IsNullOrWhiteSpace(equipmentName) || string.IsNullOrWhiteSpace(description) || dailyRate == 0)
+        {
+            showAlert = true;
+            alertMessage = "Please fill in all fields.";
+            alertClass = "alert-danger";
+        }
+        else
+        {
+            bool result = db.AddEquipment(equipmentId, categoryId, equipmentName, description, dailyRate);
+            if (result)
+            {
+                showAlert = true;
+                alertMessage = "Equipment added successfully!";
+                alertClass = "alert-success";
+                equipmentId = 0;
+                categoryId = 0;
+                equipmentName = "";
+                description = "";
+                dailyRate = 0;
+            }
+            else
+            {
+                showAlert = true;
+                alertMessage = "Failed to add equipment. Please try again.";
+                alertClass = "alert-danger";
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private bool CheckValidCategoryId(int id)
+    {
+        if (id == 10 || id == 20 || id == 30 || id == 40 || id == 50) return true;
+
+        return false;
+    }
+}

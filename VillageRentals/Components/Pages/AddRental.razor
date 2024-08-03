@@ -1,0 +1,187 @@
+﻿@page "/addrental"
+
+<h2 class="welcome-message">Add rental</h2>
+<div class="screen">
+    @if (showAlert)
+    {
+        <div class="alert @alertClass" role="alert">
+            @alertMessage
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="customerId">Customer ID:</label>
+        <input id="customerId" class="form-control" @bind="customerId" />
+    </div>
+    <div class="form-group">
+        <label for="rentalDate">Rental Date (M/dd/yyyy):</label>
+        <input id="rentalDate" class="form-control" @bind="rentalDate" />
+    </div>
+    <div class="form-group">
+        <label for="returnDate">Return Date (M/dd/yyyy):</label>
+        <input id="returnDate" class="form-control" @bind="returnDate" />
+    </div>
+    <div class="form-group">
+        <label for="equipmentIds">Equipment IDs (comma-separated):</label>
+        <input id="equipmentIds" class="form-control" @bind="equipmentIds" />
+    </div>
+
+    <button @onclick="CreateRental" class="add-button">Add Rental</button>
+</div>
+
+
+@code {
+    private bool showAlert = false;
+    private string alertMessage = "";
+    private string alertClass = "";
+
+    private int customerId;
+    private string rentalDate = "";
+    private string returnDate = "";
+    private string equipmentIds = "";
+
+    DatabaseConnection db = new DatabaseConnection();
+
+    private async Task CreateRental()
+    {
+        List<string> equipmentIdList = equipmentIds.Split(',').ToList();
+
+        if (customerId == 0 || string.IsNullOrWhiteSpace(rentalDate) || string.IsNullOrWhiteSpace(returnDate) || equipmentIdList.Count == 0)
+        {
+            showAlert = true;
+            alertMessage = "Please fill in all fields.";
+            alertClass = "alert-danger";
+        }
+        else if (!CheckExistClient(customerId))
+        {
+            showAlert = true;
+            alertMessage = "Client does not exist.";
+            alertClass = "alert-danger";
+        }
+        else if (!CheckValidDate(rentalDate, returnDate))
+        {
+            showAlert = true;
+            alertMessage = "Invalid rental or return date format.";
+            alertClass = "alert-danger";
+        }
+        else if (!CheckExistItem(equipmentIdList))
+        {
+            showAlert = true;
+            alertMessage = "Equipment ID(s) do not exist.";
+            alertClass = "alert-danger";
+        }
+        else if (!CheckValidItem(rentalDate, returnDate, equipmentIdList))
+        {
+            showAlert = true;
+            alertMessage = "Selected equipment is not available for the specified dates.";
+            alertClass = "alert-danger";
+        }
+        else
+        {
+            List<int> equipmentListInt = new List<int>();
+            foreach (string id in equipmentIdList)
+            {
+                equipmentListInt.Add(int.Parse(id));
+            }
+            db.CreateRental(customerId, rentalDate, returnDate, equipmentListInt);
+            showAlert = true;
+            alertMessage = "Rental created successfully!";
+            alertClass = "alert-success";
+
+            customerId = 0;
+            rentalDate = "";
+            returnDate = "";
+            equipmentIds = "";
+        }
+
+        StateHasChanged();
+    }
+
+
+    private bool CheckValidDate(string rentalDate, string returnDate)
+    {
+        string format = "M/dd/yyyy";
+        DateTime time1, time2;
+
+        if (DateTime.TryParseExact(rentalDate, format, null, System.Globalization.DateTimeStyles.None, out time1)
+            && DateTime.TryParseExact(returnDate, format, null, System.Globalization.DateTimeStyles.None, out time2))
+        {
+            if (time2 >= time1 && time1 >= DateTime.Today) return true;
+            return false;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool CheckExistItem(List<string> equipmentIds)
+    {
+        List<List<string>> equipmentsList = db.GetEquipmentList();
+        foreach(string id in equipmentIds)
+        {
+            int flag = 0;
+            for (int i = 0; i < equipmentsList.Count; i++)
+            {
+                if (id == equipmentsList[i][0])
+                {
+                    flag = 1;
+                    break;
+                }
+            }
+            if (flag != 1) return false;
+        }
+
+        return true;
+    }
+
+    private bool CheckValidItem(string rentalDate, string returnDate, List<string> equipmentIds)
+    {
+        List<List<string>> rentalRecord = db.GetRentalRecord();
+        List<List<string>> filteredList;
+
+
+        foreach(List<string> record in rentalRecord)
+        {
+            if (equipmentIds.Contains(record[3]))
+            {
+                if (IsDateWithinInterval(rentalDate, record[6], record[7]) || IsDateWithinInterval(returnDate, record[6], record[7]))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsDateWithinInterval(string dateToCheck, string startDate, string endDate)
+    {
+        string format = "M/dd/yyyy";
+        DateTime checkDate, start, end;
+
+        if (DateTime.TryParseExact(dateToCheck, format, null, System.Globalization.DateTimeStyles.None, out checkDate)
+            && DateTime.TryParseExact(startDate, format, null, System.Globalization.DateTimeStyles.None, out start)
+            && DateTime.TryParseExact(endDate, format, null, System.Globalization.DateTimeStyles.None, out end))
+        {
+            return checkDate >= start && checkDate <= end;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private bool CheckExistClient(int customerId)
+    {
+        List<List<string>> Customers = db.GetCustomerList();
+        foreach (var customer in Customers)
+        {
+            if (customer[0] == customerId.ToString())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}

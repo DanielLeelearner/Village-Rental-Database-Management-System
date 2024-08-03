@@ -1,0 +1,104 @@
+﻿@page "/lookupequipment"
+
+<h2 class="welcome-message">Manage Equipment</h2>
+
+<div style="position: relative;">
+    <input type="text" @bind="searchString" placeholder="Search" class="form-control" />
+    <button @onclick="FilterEquipment" class="btn btn-primary" style="position: absolute; right: 0px; top: 1%;">Search</button>
+</div>
+
+@if (!string.IsNullOrEmpty(searchString))
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Equipment ID</th>
+                <th>Category</th>
+                <th>Equipment Name</th>
+                <th>Description</th>
+                <th>Daily Rate</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var equipment in selectedEquipment)
+            {
+                <tr>
+                    <td>@equipment[0]</td>
+                    <td>@equipment[1]</td>
+                    <td>@equipment[2]</td>
+                    <td>@equipment[3]</td>
+                    <td>@equipment[4]</td>
+                    <td><button @onclick="@( () => DeleteEquipment(int.Parse(equipment[0])) )" class="btn btn-danger">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Equipment ID</th>
+                <th>Category</th>
+                <th>Equipment Name</th>
+                <th>Description</th>
+                <th>Daily Rate</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var equipment in Equipment)
+            {
+                <tr>
+                    <td>@equipment[0]</td>
+                    <td>@equipment[1]</td>
+                    <td>@equipment[2]</td>
+                    <td>@equipment[3]</td>
+                    <td>@equipment[4]</td>
+                    <td><button @onclick="@( () => DeleteEquipment(int.Parse(equipment[0])) )" class="btn btn-danger">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private DatabaseConnection db = new DatabaseConnection();
+    private List<List<string>> Equipment = new List<List<string>>();
+    private List<List<string>> selectedEquipment = new List<List<string>>();
+    private string searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Equipment = db.GetEquipmentList();
+    }
+
+    private void FilterEquipment()
+    {
+        selectedEquipment.Clear();
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            foreach (var equipment in Equipment)
+            {
+                for (int i = 0; i < equipment.Count; i++)
+                {
+                    if (equipment[i].Contains(searchString))
+                    {
+                        selectedEquipment.Add(equipment);
+                        break;
+                    }
+                }
+            }
+        }
+        StateHasChanged();
+    }
+
+    private void DeleteEquipment(int equipmentId)
+    {
+        db.DeleteEquipment(equipmentId);
+        Equipment = db.GetEquipmentList();
+        FilterEquipment();
+    }
+}
